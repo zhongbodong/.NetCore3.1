@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using WebApiTest.Datas;
+using WebApiTest.Dtos;
 
 namespace WebApiTest
 {
@@ -19,17 +20,26 @@ namespace WebApiTest
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            optionModel = new OptionModel();
+            Configuration.GetSection("Position").Bind(optionModel);
+
+            optionModel2 = Configuration.GetSection("Position").Get<OptionModel>();
         }
+
+        public static OptionModel optionModel;
+        public static OptionModel optionModel2;
 
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<OptionModel>(Configuration);
             services.AddControllers();
             services.AddDbContextPool<TodoContext>(options=> {
 
-                options.UseMySql(Configuration.GetConnectionString("WebApiContext"));
+                options.UseMySql(Configuration.GetConnectionString("WebApiContext"))
+                .EnableSensitiveDataLogging(Configuration.GetValue<bool>("Logging:EnableSqlParameterLogging"));
             });
         }
 

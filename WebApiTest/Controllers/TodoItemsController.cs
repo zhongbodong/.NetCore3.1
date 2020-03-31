@@ -17,9 +17,13 @@ namespace WebApiTest.Controllers
     {
         private readonly TodoContext _context;
 
-        public TodoItemsController(TodoContext context)
+        public TodoItemsController(TodoContext context, Microsoft.Extensions.Options.IOptionsMonitor<OptionModel> optionsAccessor)
         {
+            OptionModel optionModel = Startup.optionModel;
             _context = context;
+
+            var value = optionsAccessor.CurrentValue;
+            var name = value.Name;
         }
 
         // GET: api/TodoItems
@@ -32,6 +36,7 @@ namespace WebApiTest.Controllers
 
             return await _context.TodoItems
            .Select(x => ItemToDTO(x))
+            .TagWith(nameof(GetTodoItems))
            .ToListAsync();
         }
 
@@ -39,7 +44,15 @@ namespace WebApiTest.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TodoItem>> GetTodoItem(long id)
         {
-            var todoItem = await _context.TodoItems.FindAsync(id);
+            var todoItemQuery = from o in _context.TodoItems.AsNoTracking()
+                            .TagWith(nameof(GetTodoItem))
+            where o.Id == id
+            select o;
+            var todoItem = await todoItemQuery.FirstOrDefaultAsync();
+
+            //var todoItem = await _context.TodoItems.FindAsync(id)
+            //                                       .TagWith(nameof(GetTodoItem))
+            //                                       .ToListAsync();
 
             if (todoItem == null)
             {
